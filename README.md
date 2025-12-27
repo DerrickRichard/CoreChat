@@ -77,7 +77,7 @@ Developer and Administrative Operations
 For quality assurance and development testing, a hidden administrative portal is embedded within the application. This allows developers to reset local states without manually clearing browser caches.
 
 1.  Access Protocol: Users must input the keyboard sequence Alt + Q + W to trigger the authorization prompt.
-2.  Authorization: Entry of the Developer Key, devSaysLiftBan, resets the local flag count and clears any active suspension timestamps.
+2.  Authorization: Entry of the Developer Key resets the local flag count and clears any active suspension timestamps.
 
 ### Deployment Guidelines
 
