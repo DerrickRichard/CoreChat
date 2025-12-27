@@ -13,7 +13,7 @@
       line-height: 1.5;
     }
 
-    /* NAVIGATION */
+    /* MAIN NAVIGATION */
     nav {
       background: #333;
       padding: 12px;
@@ -25,7 +25,7 @@
 
     nav a {
       color: white;
-      margin: 0 20px;
+      margin: 0 15px;
       text-decoration: none;
       font-weight: bold;
       cursor: pointer;
@@ -42,10 +42,37 @@
       border-radius: 4px;
     }
 
+    /* STICKY SUB-NAV (Inside Docs) */
+    #docs-nav {
+      background: #ffffff;
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 45px; /* Sits below the main nav */
+      z-index: 900;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    #docs-nav a {
+      margin: 0 12px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #555;
+      text-decoration: none;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #docs-nav a:hover {
+      color: #4f46e5;
+    }
+
     /* PAGE SECTIONS */
     .page {
       display: none;
-      padding-bottom: 40px;
+      padding-bottom: 60px;
     }
 
     .active {
@@ -70,12 +97,12 @@
     }
 
     /* LISTS */
-    ul {
+    ul, ol {
       padding-left: 20px;
     }
 
     li {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     /* CODE BLOCKS */
@@ -105,9 +132,15 @@
       color: #66b3ff;
     }
 
+    h3 {
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+      margin-top: 40px;
+    }
+
     footer {
       text-align: center;
-      padding: 20px;
+      padding: 30px;
       margin-top: 40px;
       background: #eee;
       font-size: 14px;
@@ -117,6 +150,16 @@
     @media (max-width: 768px) {
       nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
       nav a { margin: 0 5px; font-size: 14px; }
+      
+      #docs-nav {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        top: 85px;
+        padding: 10px;
+      }
+      #docs-nav::-webkit-scrollbar { display: none; }
       .container { margin: 15px; padding: 20px; }
     }
   </style>
@@ -126,6 +169,7 @@
 <nav>
   <a onclick="showPage('home')">Home</a>
   <a onclick="showPage('tech')">How it Works</a>
+  <a onclick="showPage('docs')">Documentation</a>
   <a onclick="showPage('dev')">Developer</a>
   <a href="chat.html" class="cta-btn">Launch App</a>
 </nav>
@@ -167,22 +211,88 @@
 <!-- TECH PAGE -->
 <div id="tech" class="page">
   <div class="container">
-    <h2>How it Works</h2>
+    <h2>Technical Overview</h2>
     <p>CoreChat operates as a Static Web Application (SWA) with a decentralized signaling model.</p>
 
     <h3>The Connection Lifecycle</h3>
     <ol>
-      <li><strong>Signaling:</strong> You receive a unique 6-character ID. When you share this with a peer, a "handshake" occurs via a signaling server.</li>
-      <li><strong>NAT Traversal:</strong> STUN servers identify your public IP to bypass home firewalls.</li>
-      <li><strong>DataChannel:</strong> A direct tunnel is opened. Once connected, the signaling server is no longer involved.</li>
+      <li><strong>Signaling:</strong> You receive a unique 6-character ID. When you share this with a peer, a "handshake" occurs via a signaling server to exchange session descriptions.</li>
+      <li><strong>NAT Traversal:</strong> STUN (Session Traversal Utilities for NAT) servers identify your public IP address to navigate through home firewalls.</li>
+      <li><strong>DataChannel:</strong> Once the handshake is complete, a direct encrypted tunnel is opened. From this point on, the signaling server is no longer involved in the conversation.</li>
     </ol>
 
     <h3>Safety Standards</h3>
-    <p>To prevent abuse in a serverless environment, CoreChat implements:</p>
+    <p>To prevent abuse in a serverless environment, CoreChat implements advanced client-side safeguards:</p>
     <ul>
-      <li><strong>Fuzzy-Logic Reporting:</strong> Detects "leetspeak" variations of blocked words.</li>
-      <li><strong>Progressive Suspension:</strong> Automatic 1–3 minute messaging blocks for repeat violators.</li>
-      <li><strong>Client-Side Scans:</strong> Outgoing messages are scanned <em>before</em> they leave your device.</li>
+      <li><strong>Fuzzy-Logic Reporting:</strong> Automatically detects and flags "leetspeak" variations of blocked words (e.g., using zeros for 'O's).</li>
+      <li><strong>Progressive Suspension:</strong> An automated system that triggers 1–3 minute messaging blocks for repeat violators.</li>
+      <li><strong>Client-Side Scans:</strong> Every outgoing message is scanned by the CensorCore engine <em>before</em> it is transmitted to the peer.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- DOCUMENTATION PAGE -->
+<div id="docs" class="page">
+  <div id="docs-nav">
+    <a onclick="scrollToSection('exec-summary')">Summary</a>
+    <a onclick="scrollToSection('architecture')">Architecture</a>
+    <a onclick="scrollToSection('moderation')">Moderation</a>
+    <a onclick="scrollToSection('security')">Security</a>
+    <a onclick="scrollToSection('dev-ops')">DevOps</a>
+    <a onclick="scrollToSection('requirements')">Requirements</a>
+  </div>
+
+  <div class="container">
+    <h2>CoreChat Production Documentation</h2>
+
+    <h3 id="exec-summary">Executive Summary</h3>
+    <p>CoreChat is a high-performance, serverless peer-to-peer messaging framework designed for secure, private, and moderated communication. By utilizing the WebRTC protocol, CoreChat eliminates the need for intermediary servers to store or relay message data, ensuring that all conversations remain strictly between the participating endpoints.</p>
+
+    <h3 id="architecture">Project Vision and Architecture</h3>
+    <p>The primary objective of CoreChat is to provide a zero-footprint messaging solution where privacy is maintained by the architectural design. The application functions as a Static Web Application, executing all logic locally in the browser.</p>
+
+    <h4>Network Topology and Signaling</h4>
+    <ol>
+      <li><strong>Signaling:</strong> The client connects to a global signaling server to register its unique 6-character ID.</li>
+      <li><strong>NAT Traversal:</strong> The system utilizes STUN servers to identify public IP addresses and navigate firewalls.</li>
+      <li><strong>Peer-to-Peer Tunneling:</strong> Once the handshake is complete, data flows directly from one browser's memory to the other.</li>
+    </ol>
+
+    <h3 id="moderation">CensorCore Moderation Engine</h3>
+    <p>A critical component is the integration of the CensorCore Library, acting as a local firewall for text content.</p>
+
+    <h4>Content Filtering Logic</h4>
+    <ul>
+      <li>The string is passed to the CensorCore validator before transmission.</li>
+      <li>The engine checks content against a weighted dictionary of prohibited terms.</li>
+      <li>Violations are intercepted and discarded before reaching the network layer.</li>
+    </ul>
+
+    <h4>Fuzzy Match Reporting</h4>
+    <ul>
+      <li>Calculates Levenshtein distance between flagged text and prohibited wordlists.</li>
+      <li>Allows the software to catch bypassed filters (leetspeak) dynamically.</li>
+    </ul>
+
+    <h3 id="security">Security and Encryption Standards</h3>
+    <ul>
+      <li><strong>DTLS:</strong> All data is encrypted using Datagram Transport Layer Security.</li>
+      <li><strong>Perfect Forward Secrecy:</strong> Keys are negotiated for each session.</li>
+      <li><strong>Local Privacy:</strong> Message history is volatile; refreshing the browser wipes all data from RAM.</li>
+    </ul>
+
+    <h3 id="dev-ops">Advanced Feature Specifications</h3>
+    <h4>Progressive Suspension System</h4>
+    <p>An automated anti-abuse system tracks user behavior: Initial violations result in local warnings, while repeated violations lead to timed suspensions (1–3 minutes) managed via browser timestamps.</p>
+
+    <h4>Developer Operations</h4>
+    <p>A hidden administrative portal is embedded for overriding suspensions. Users can trigger the authorization prompt using the keyboard sequence <strong>Alt + Q + W</strong>.</p>
+
+    <h3 id="requirements">Technical Requirements</h3>
+    <ul>
+      <li><strong>Browser:</strong> Modern evergreen browsers (Chrome 60+, Firefox 55+, Safari 11+, Edge 79+).</li>
+      <li><strong>Connectivity:</strong> Support for WebRTC protocols.</li>
+      <li><strong>Protocol:</strong> Must be served over <strong>HTTPS</strong> for peer discovery permissions.</li>
     </ul>
   </div>
 </div>
@@ -199,15 +309,16 @@
     <h3>Other Projects</h3>
     <ul>
       <li><a href="https://derrickrichard.github.io/CensorCore-Library/" target="_blank">CensorCore Library</a> — The engine powering CoreChat moderation.</li>
-      <li><a href="https://dev.to/derrickrichard" target="_blank">Dev.to Articles</a> — Weekly insights on web development.</li>
+      <li><a href="https://dev.to/derrickrichard" target="_blank">Dev.to Articles</a> — Weekly insights on web development and P2P technology.</li>
+      <li><a href="https://github.com/DerrickRichard" target="_blank">GitHub Profile</a> — Open source contributions and repositories.</li>
     </ul>
 
-    <p><a href="https://derrickrichard.github.io/profile/" target="_blank">Visit Personal Profile</a></p>
+    <p><a href="https://derrickrichard.github.io/profile/" target="_blank">Visit Official Portfolio</a></p>
   </div>
 </div>
 
 <footer>
-  CoreChat © 2025 — MIT Licensed — Built with WebRTC and PeerJS
+  CoreChat © 2025 — MIT Licensed — Built with WebRTC, PeerJS, and CensorCore
 </footer>
 
 <script>
@@ -215,6 +326,23 @@
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     window.scrollTo(0, 0);
+  }
+
+  // SMOOTH SCROLL LOGIC FOR THE DOCS SUB-NAV
+  function scrollToSection(id) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    
+    const offset = 120; // Accounts for Main Nav + Sub-Nav height
+    const bodyRect = document.body.getBoundingClientRect().top;
+    const elementRect = element.getBoundingClientRect().top;
+    const elementPosition = elementRect - bodyRect;
+    const offsetPosition = elementPosition - offset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
   }
 </script>
 
