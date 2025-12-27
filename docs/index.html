@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CoreChat — Professional P2P Messaging</title>
   <link rel="icon" type="image/svg+xml" href="coreChat.svg">
+
   <style>
     body {
       margin: 0;
@@ -14,7 +15,7 @@
       line-height: 1.5;
     }
 
-    /* MAIN NAVIGATION */
+    /* NAVIGATION */
     nav {
       background: #333;
       padding: 12px;
@@ -26,7 +27,7 @@
 
     nav a {
       color: white;
-      margin: 0 15px;
+      margin: 0 20px;
       text-decoration: none;
       font-weight: bold;
       cursor: pointer;
@@ -37,55 +38,29 @@
       text-decoration: underline;
     }
 
-    .cta-btn {
-      background: #4f46e5;
-      padding: 5px 15px;
-      border-radius: 4px;
-    }
-
-    /* STICKY SUB-NAV (Inside Docs) */
-    #docs-nav {
-      background: #ffffff;
-      padding: 15px;
-      border-bottom: 1px solid #ddd;
-      position: sticky;
-      top: 45px; /* Sits below the main nav */
-      z-index: 900;
-      text-align: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-
-    #docs-nav a {
-      margin: 0 12px;
-      font-weight: bold;
-      cursor: pointer;
-      color: #555;
-      text-decoration: none;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    #docs-nav a:hover {
-      color: #4f46e5;
-    }
-
     /* PAGE SECTIONS */
     .page {
       display: none;
-      padding-bottom: 60px;
+      padding-bottom: 40px;
     }
 
     .active {
       display: block;
     }
 
-    /* HEADER */
+    /* HOME PAGE */
     header {
       background: #222;
       color: white;
-      padding: 60px 20px;
+      padding: 30px 20px;
       text-align: center;
+    }
+
+    header img.logo {
+      width: 90px;
+      height: 90px;
+      border-radius: 10px;
+      margin-bottom: 10px;
     }
 
     .container {
@@ -97,26 +72,100 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    /* LISTS */
-    ul, ol {
-      padding-left: 20px;
+    /* DOCUMENTATION PAGE */
+    #docs-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
     }
 
-    li {
-      margin-bottom: 12px;
+    #docs-nav {
+      background: white;
+      padding: 15px;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 45px;
+      z-index: 900;
+      text-align: center;
     }
 
-    /* CODE BLOCKS */
+    #docs-nav a {
+      margin-right: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #333;
+      text-decoration: none;
+    }
+
+    #docs-nav a:hover {
+      text-decoration: underline;
+    }
+
     pre {
       background: #eee;
       padding: 15px;
       border-radius: 6px;
       overflow-x: auto;
       font-size: 14px;
-      border-left: 4px solid #4f46e5;
     }
 
-    /* LINKS */
+    footer {
+      text-align: center;
+      padding: 20px;
+      margin-top: 40px;
+      background: #eee;
+    }
+
+    /* --- MOBILE STYLES --- */
+    @media (max-width: 768px) {
+      nav {
+        padding: 10px 5px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      nav a {
+        margin: 0 5px;
+        font-size: 14px;
+      }
+
+      .container, #docs-container {
+        margin: 15px;
+        padding: 20px;
+        width: auto;
+      }
+
+      header {
+        padding: 40px 15px;
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+
+      /* Make Docs Nav swipeable on mobile */
+      #docs-nav {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px 15px;
+        top: 80px;
+      }
+
+      #docs-nav::-webkit-scrollbar {
+        display: none;
+      }
+
+      #docs-nav a {
+        font-size: 14px;
+        margin-right: 15px;
+      }
+    }
+
+    /* --- LINK STYLES --- */
     a {
       color: #0066cc;
       text-decoration: none;
@@ -133,59 +182,69 @@
       color: #66b3ff;
     }
 
-    h3 {
-      border-bottom: 2px solid #eee;
-      padding-bottom: 5px;
-      margin-top: 40px;
+    header a:hover {
+      color: #99ccff;
     }
 
-    footer {
-      text-align: center;
-      padding: 30px;
-      margin-top: 40px;
-      background: #eee;
-      font-size: 14px;
-      color: #666;
+    nav a {
+      color: white;
     }
 
-    @media (max-width: 768px) {
-      nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-      nav a { margin: 0 5px; font-size: 14px; }
-      
-      #docs-nav {
-        display: flex;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-        top: 85px;
-        padding: 10px;
-      }
-      #docs-nav::-webkit-scrollbar { display: none; }
-      .container { margin: 15px; padding: 20px; }
+    .container a[style*="display:inline-flex"] {
+      padding: 8px 12px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      color: #333;
     }
 
-     header img.logo {
-      width: 90px;
-      height: 90px;
-      border-radius: 10px;
-      margin-bottom: 10px;
+    .container a[style*="display:inline-flex"]:hover {
+      background: #e5e5e5;
+      text-decoration: none;
+      border-color: #bbb;
+    }
+
+    .cta-btn {
+      background: #4f46e5 !important;
+      padding: 5px 15px !important;
+      border-radius: 4px;
+    }
+
+        .version-item {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+      margin-bottom: 15px;
+    }
+    .version-item:last-child {
+      border-bottom: none;
+    }
+    .version-tag {
+      background: #4f46e5;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 10px;
     }
   </style>
 </head>
+
 <body>
 
 <nav>
   <a onclick="showPage('home')">Home</a>
+  <a href="chat.html" class="cta-btn">Launch App</a>
   <a onclick="showPage('tech')">How it Works</a>
   <a onclick="showPage('docs')">Documentation</a>
+  <a onclick="showPage('versions')">Versions</a>
   <a onclick="showPage('dev')">Developer</a>
-  <a href="chat.html" class="cta-btn">Launch App</a>
 </nav>
 
 <!-- HOME PAGE -->
 <div id="home" class="page active">
   <header>
-   <img class="logo" src="coreChat.svg" alt="CoreChat Logo">
+    <img class="logo" src="coreChat.svg" alt="CoreChat Logo">
     <h1>CoreChat</h1>
     <h2>High-Performance P2P Moderated Messaging</h2>
     <p>Serverless, encrypted, and moderated by <a href="https://derrickrichard.github.io/CensorCore-Library/" target="_blank">CensorCore</a>.</p>
@@ -251,58 +310,80 @@
     <a onclick="scrollToSection('requirements')">Requirements</a>
   </div>
 
+  <div id="docs-container">
+    <div class="container" style="margin: 0; max-width: 100%; box-shadow: none; padding: 0;">
+      <h2>CoreChat Production Documentation</h2>
+
+      <h3 id="exec-summary">Executive Summary</h3>
+      <p>CoreChat is a high-performance, serverless peer-to-peer messaging framework designed for secure, private, and moderated communication. By utilizing the WebRTC protocol, CoreChat eliminates the need for intermediary servers to store or relay message data, ensuring that all conversations remain strictly between the participating endpoints.</p>
+
+      <h3 id="architecture">Project Vision and Architecture</h3>
+      <p>The primary objective of CoreChat is to provide a zero-footprint messaging solution where privacy is maintained by the architectural design. The application functions as a Static Web Application, executing all logic locally in the browser.</p>
+
+      <h4>Network Topology and Signaling</h4>
+      <ol>
+        <li><strong>Signaling:</strong> The client connects to a global signaling server to register its unique 6-character ID.</li>
+        <li><strong>NAT Traversal:</strong> The system utilizes STUN servers to identify public IP addresses and navigate firewalls.</li>
+        <li><strong>Peer-to-Peer Tunneling:</strong> Once the handshake is complete, data flows directly from one browser's memory to the other.</li>
+      </ol>
+
+      <h3 id="moderation">CensorCore Moderation Engine</h3>
+      <p>A critical component is the integration of the CensorCore Library, acting as a local firewall for text content.</p>
+
+      <h4>Content Filtering Logic</h4>
+      <ul>
+        <li>The string is passed to the CensorCore validator before transmission.</li>
+        <li>The engine checks content against a weighted dictionary of prohibited terms.</li>
+        <li>Violations are intercepted and discarded before reaching the network layer.</li>
+      </ul>
+
+      <h4>Fuzzy Match Reporting</h4>
+      <ul>
+        <li>Calculates Levenshtein distance between flagged text and prohibited wordlists.</li>
+        <li>Allows the software to catch bypassed filters (leetspeak) dynamically.</li>
+      </ul>
+
+      <h3 id="security">Security and Encryption Standards</h3>
+      <ul>
+        <li><strong>DTLS:</strong> All data is encrypted using Datagram Transport Layer Security.</li>
+        <li><strong>Perfect Forward Secrecy:</strong> Keys are negotiated for each session.</li>
+        <li><strong>Local Privacy:</strong> Message history is volatile; refreshing the browser wipes all data from RAM.</li>
+      </ul>
+
+      <h3 id="dev-ops">Advanced Feature Specifications</h3>
+      <h4>Progressive Suspension System</h4>
+      <p>An automated anti-abuse system tracks user behavior: Initial violations result in local warnings, while repeated violations lead to timed suspensions (1–3 minutes) managed via browser timestamps.</p>
+
+      <h4>Developer Operations</h4>
+      <p>A hidden administrative portal is embedded for overriding suspensions. Users can trigger the authorization prompt using the keyboard sequence <strong>Alt + Q + W</strong>.</p>
+
+      <h3 id="requirements">Technical Requirements</h3>
+      <ul>
+        <li><strong>Browser:</strong> Modern evergreen browsers (Chrome 60+, Firefox 55+, Safari 11+, Edge 79+).</li>
+        <li><strong>Connectivity:</strong> Support for WebRTC protocols.</li>
+        <li><strong>Protocol:</strong> Must be served over <strong>HTTPS</strong> for peer discovery permissions.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- VERSIONS PAGE -->
+<div id="versions" class="page">
   <div class="container">
-    <h2>CoreChat Production Documentation</h2>
-
-    <h3 id="exec-summary">Executive Summary</h3>
-    <p>CoreChat is a high-performance, serverless peer-to-peer messaging framework designed for secure, private, and moderated communication. By utilizing the WebRTC protocol, CoreChat eliminates the need for intermediary servers to store or relay message data, ensuring that all conversations remain strictly between the participating endpoints.</p>
-
-    <h3 id="architecture">Project Vision and Architecture</h3>
-    <p>The primary objective of CoreChat is to provide a zero-footprint messaging solution where privacy is maintained by the architectural design. The application functions as a Static Web Application, executing all logic locally in the browser.</p>
-
-    <h4>Network Topology and Signaling</h4>
-    <ol>
-      <li><strong>Signaling:</strong> The client connects to a global signaling server to register its unique 6-character ID.</li>
-      <li><strong>NAT Traversal:</strong> The system utilizes STUN servers to identify public IP addresses and navigate firewalls.</li>
-      <li><strong>Peer-to-Peer Tunneling:</strong> Once the handshake is complete, data flows directly from one browser's memory to the other.</li>
-    </ol>
-
-    <h3 id="moderation">CensorCore Moderation Engine</h3>
-    <p>A critical component is the integration of the CensorCore Library, acting as a local firewall for text content.</p>
-
-    <h4>Content Filtering Logic</h4>
-    <ul>
-      <li>The string is passed to the CensorCore validator before transmission.</li>
-      <li>The engine checks content against a weighted dictionary of prohibited terms.</li>
-      <li>Violations are intercepted and discarded before reaching the network layer.</li>
-    </ul>
-
-    <h4>Fuzzy Match Reporting</h4>
-    <ul>
-      <li>Calculates Levenshtein distance between flagged text and prohibited wordlists.</li>
-      <li>Allows the software to catch bypassed filters (leetspeak) dynamically.</li>
-    </ul>
-
-    <h3 id="security">Security and Encryption Standards</h3>
-    <ul>
-      <li><strong>DTLS:</strong> All data is encrypted using Datagram Transport Layer Security.</li>
-      <li><strong>Perfect Forward Secrecy:</strong> Keys are negotiated for each session.</li>
-      <li><strong>Local Privacy:</strong> Message history is volatile; refreshing the browser wipes all data from RAM.</li>
-    </ul>
-
-    <h3 id="dev-ops">Advanced Feature Specifications</h3>
-    <h4>Progressive Suspension System</h4>
-    <p>An automated anti-abuse system tracks user behavior: Initial violations result in local warnings, while repeated violations lead to timed suspensions (1–3 minutes) managed via browser timestamps.</p>
-
-    <h4>Developer Operations</h4>
-    <p>A hidden administrative portal is embedded for overriding suspensions. Users can trigger the authorization prompt using the keyboard sequence <strong>Alt + Q + W</strong>.</p>
-
-    <h3 id="requirements">Technical Requirements</h3>
-    <ul>
-      <li><strong>Browser:</strong> Modern evergreen browsers (Chrome 60+, Firefox 55+, Safari 11+, Edge 79+).</li>
-      <li><strong>Connectivity:</strong> Support for WebRTC protocols.</li>
-      <li><strong>Protocol:</strong> Must be served over <strong>HTTPS</strong> for peer discovery permissions.</li>
-    </ul>
+    <h2>Version History</h2>
+    
+    <div class="version-item">
+      <h3><span class="version-tag">v1.0.0</span> Production Release</h3>
+      <p><strong>CoreChat</strong> is a high-performance, serverless peer-to-peer messaging platform designed to provide secure and moderated communication without the need for a central database. By leveraging <strong>WebRTC</strong> for direct browser-to-browser connections and the <strong>CensorCore</strong> engine for real-time content filtering, it ensures that all conversations remain private, encrypted, and safe from abuse.</p>
+      
+      <ul>
+        <li>Stable WebRTC DataChannel implementation via PeerJS.</li>
+        <li>Full integration with CensorCore Moderation Engine.</li>
+        <li>Automated Progressive Suspension anti-abuse system.</li>
+        <li>Fuzzy-logic detection for "leetspeak" filter bypassing.</li>
+        <li>Zero-footprint SWA architecture (no accounts or logs).</li>
+      </ul>
+    </div>
   </div>
 </div>
 
@@ -337,12 +418,9 @@
     window.scrollTo(0, 0);
   }
 
-  // SMOOTH SCROLL LOGIC FOR THE DOCS SUB-NAV
   function scrollToSection(id) {
     const element = document.getElementById(id);
-    if (!element) return;
-    
-    const offset = 120; // Accounts for Main Nav + Sub-Nav height
+    const offset = 100; 
     const bodyRect = document.body.getBoundingClientRect().top;
     const elementRect = element.getBoundingClientRect().top;
     const elementPosition = elementRect - bodyRect;
