@@ -98,6 +98,7 @@
       display: flex; 
       gap: 10px; 
       background: #020617; 
+      align-items: center;
     }
     
     .id-box { 
@@ -139,7 +140,7 @@
     .msg-wrapper.me { align-self: flex-end; flex-direction: row-reverse; }
     .msg-wrapper.peer { align-self: flex-start; }
     
-    .msg { padding: 10px 16px; border-radius: 18px; font-size: 14px; line-height: 1.4; word-wrap: break-word; transition: all 0.3s; }
+    .msg { padding: 10px 16px; border-radius: 18px; font-size: 14px; line-height: 1.4; word-wrap: break-word; transition: all 0.3s; position: relative; }
     .me .msg { background: var(--accent); border-bottom-right-radius: 2px; }
     .peer .msg { background: #334155; border-bottom-left-radius: 2px; }
     
@@ -155,25 +156,29 @@
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #64748b; }
     .online .dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
 
-    /* Administrative Override Modal */
+    /* Additional UI Styles */
+    .msg-time { font-size: 9px; opacity: 0.5; display: block; margin-top: 4px; text-align: right; }
+    .read-receipt { font-size: 10px; color: var(--success); margin-left: 4px; display: none; }
+    .me .read-receipt { display: inline; opacity: 0.6; }
+
+    #typing-indicator { font-size: 11px; color: var(--muted); font-style: italic; height: 18px; padding-left: 20px; }
+    
+    #history-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.98);
+      color: #00ff41; font-family: 'Courier New', Courier, monospace; padding: 30px;
+      display: none; flex-direction: column; z-index: 5000; overflow-y: auto;
+    }
+
+    .file-preview { max-width: 250px; max-height: 200px; border-radius: 12px; margin-top: 8px; display: block; cursor: pointer; border: 1px solid var(--border); }
+    .file-link { color: white; display: flex; align-items: center; gap: 8px; text-decoration: underline; font-size: 13px; margin-top: 5px; }
+
     #override-modal {
-      position: fixed; 
-      inset: 0; 
-      background: rgba(2, 6, 23, 0.95);
-      display: none; 
-      align-items: center; 
-      justify-content: center; 
-      z-index: 1000;
+      position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95);
+      display: none; align-items: center; justify-content: center; z-index: 1000;
     }
     .modal-content {
-      background: #0f172a; 
-      padding: 40px; 
-      border-radius: 24px; 
-      border: 1px solid var(--accent);
-      width: 90%; 
-      max-width: 400px; 
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      background: #0f172a; padding: 40px; border-radius: 24px; border: 1px solid var(--accent);
+      width: 90%; max-width: 400px; text-align: center;
     }
 
     @media (max-width: 768px) {
@@ -186,6 +191,14 @@
   </style>
 </head>
 <body>
+
+<div id="history-overlay">
+    <div style="display:flex; justify-content: space-between; border-bottom: 1px solid #00ff41; padding-bottom:10px; margin-bottom:20px;">
+        <h2 style="margin:0;">[SECURE_AUDIT_LOG_v4.5]</h2>
+        <span>Press CTRL+ALT+Q to Close</span>
+    </div>
+    <div id="history-content" style="font-size: 13px; line-height: 1.6;"></div>
+</div>
 
 <div id="override-modal">
   <div class="modal-content">
@@ -217,6 +230,7 @@
       <input type="text" id="peer-id-input" placeholder="Friend's Code" maxlength="6" style="text-transform: uppercase;">
       <button id="connect-btn" class="btn" style="width:100%; margin-top:10px;">Connect</button>
       <button id="end-chat-btn" class="btn" style="width:100%; margin-top:10px; background: var(--danger);" disabled>End Chat</button>
+      <button id="download-btn" class="btn" style="width:100%; margin-top:10px; background: #334155;">Download Transcript</button>
     </div>
     <div style="margin-top: auto; font-size: 11px; color: var(--muted); text-align: center;">
       Moderated by <a href="https://derrickrichard.github.io/CensorCore-Library/" target="_blank" rel="noopener noreferrer">CensorCore</a>
@@ -230,7 +244,10 @@
       <div id="status-pill" class="status"><div class="dot"></div> <span id="status-text">Connecting...</span></div>
     </div>
     <div id="messages" class="messages"></div>
+    <div id="typing-indicator"></div>
     <div class="input-area">
+      <input type="file" id="file-input" style="display:none">
+      <button id="attach-btn" class="btn" style="background:#334155; padding: 12px 15px;">📎</button>
       <input type="text" id="msg-input" placeholder="Type message..." disabled>
       <button id="send-btn" class="btn" disabled>Send</button>
     </div>
@@ -248,11 +265,60 @@
   const myIdEl = document.getElementById('my-id');
   const sidebar = document.getElementById('sidebar');
   const endChatBtn = document.getElementById('end-chat-btn');
+  const historyContent = document.getElementById('history-content');
+  const typingEl = document.getElementById('typing-indicator');
+  const fileInput = document.getElementById('file-input');
+  const attachBtn = document.getElementById('attach-btn');
 
   let bannedWords = [];
   let conn = null;
   let flagCount = 0;
   let banUntil = null;
+  let myIp = "Scanning...";
+  let peerIp = "Unknown";
+  
+  // Anti-Spam Tracking
+  let messageHistory = [];
+
+  // ACTION HISTORY LOGIC (SYCED & PERSISTENT)
+  function auditLog(action, remoteActor = null) {
+    const time = new Date().toLocaleString();
+    const actorName = remoteActor ? remoteActor : (nameInput.value || "Unknown");
+    const entryText = `[${time}] ${actorName}: ${action}`;
+    
+    // 1. Create UI Entry
+    const div = document.createElement('div');
+    div.textContent = entryText;
+    historyContent.appendChild(div);
+    historyContent.scrollTop = historyContent.scrollHeight;
+
+    // 2. Save to Persistence (Impossible to delete unless browser wiped)
+    const existing = localStorage.getItem('corechat_audit_v4') || "";
+    localStorage.setItem('corechat_audit_v4', existing + entryText + "\n");
+
+    // 3. Sync to Peer if it's a local action
+    if (!remoteActor && conn && conn.open) {
+      conn.send({ type: 'audit-sync', action: action });
+    }
+  }
+
+  // Load existing persistent log
+  const savedLog = localStorage.getItem('corechat_audit_v4');
+  if (savedLog) {
+    savedLog.split('\n').forEach(line => {
+      if (!line.trim()) return;
+      const div = document.createElement('div');
+      div.textContent = line;
+      historyContent.appendChild(div);
+    });
+  }
+
+  // IP Fetching
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json()).then(data => { 
+      myIp = data.ip; 
+      auditLog(`Local Session Start | IP: ${myIp}`); 
+    });
 
   async function loadWordlist() {
     try {
@@ -283,8 +349,19 @@
     return costs[s2.length];
   }
 
+  // Normalization Step (Leet-speak)
+  function normalizeText(text) {
+    if (typeof text !== 'string') return "";
+    return text.toLowerCase()
+      .replace(/4/g, 'a').replace(/3/g, 'e').replace(/1/g, 'i')
+      .replace(/0/g, 'o').replace(/7/g, 't').replace(/5/g, 's')
+      .replace(/[^a-z\s]/g, '');
+  }
+
   function checkFuzzy(text) {
-    const words = text.toLowerCase().split(/\s+/);
+    if (typeof text !== 'string') return false;
+    const normalized = normalizeText(text); 
+    const words = normalized.split(/\s+/);
     for (const word of words) {
       if (word.length < 3) continue;
       for (const banned of bannedWords) {
@@ -299,15 +376,24 @@
   myIdEl.textContent = myUniqueId;
   nameInput.value = localStorage.getItem('chat-display-name') || "User_" + myUniqueId.slice(0,3);
   
-  // REAL-TIME NAME UPDATE LOGIC
   nameInput.addEventListener('input', () => {
+    const oldName = localStorage.getItem('chat-display-name');
     localStorage.setItem('chat-display-name', nameInput.value);
+    auditLog(`Updated name from "${oldName}" to "${nameInput.value}"`);
     if (conn && conn.open) {
       conn.send({ type: 'name-update', name: nameInput.value });
     }
   });
 
-  const peer = new Peer(myUniqueId);
+  // Peer Initialization with STUN (School Firewall Bypass)
+  const peer = new Peer(myUniqueId, {
+    config: {
+      'iceServers': [
+        { url: 'stun:stun.l.google.com:19302' },
+        { url: 'stun:global.stun.twilio.com:3478' }
+      ]
+    }
+  });
 
   function log(msg, isError = false) {
     const div = document.createElement('div');
@@ -316,6 +402,7 @@
     div.innerHTML = `[System] ${msg}`;
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    auditLog(`SYSTEM: ${msg}`);
   }
 
   function checkBanStatus() {
@@ -327,14 +414,15 @@
     return false;
   }
 
-  function triggerViolation() {
+  function triggerViolation(reason = "Policy Violation") {
     flagCount++;
+    auditLog(`VIOLATION: ${reason} (Incident ${flagCount}/2)`);
     if (flagCount < 3) {
-      log(`Warning: CensorCore flagged your content for restricted terminology. (Incident ${flagCount}/2 before suspension).`, true);
+      log(`Warning: Policy violation detected (${reason}). (${flagCount}/2 before suspension).`, true);
     } else {
       const duration = flagCount - 2;
       banUntil = Date.now() + (duration * 60000);
-      log(`Messaging privileges suspended: Multiple violations detected. Suspension duration: ${duration} minute(s).`, true);
+      log(`Messaging privileges suspended: Multiple violations. Duration: ${duration}m.`, true);
       if (conn) conn.send({ type: 'ban-alert', duration: duration });
     }
   }
@@ -346,37 +434,51 @@
       msgElement.classList.add('blocked');
       const btn = msgElement.parentElement.querySelector('.report-btn');
       if (btn) btn.remove();
-      
-      if (notifySelf) triggerViolation();
+      if (notifySelf) triggerViolation("Remote moderation trigger");
     }
   }
 
   function handleReport(id, text, msgDiv, btn) {
+    if (typeof text !== 'string') return;
+    auditLog(`REPORT: Flagged peer message ID ${id} ("${text}")`);
     if (checkFuzzy(text)) {
       blockMessageUI(id);
       if (conn) conn.send({ type: 'flag', msgId: id });
-      log("Your report has been recorded. Similarity match confirmed. Content removed for all parties.", true);
+      log("Your report confirmed. Content removed for all parties.", true);
     } else {
-      log(`Report recorded. CensorCore did not find restricted terminology. To request that this term be added to the blacklist, please visit <a href="https://github.com/DerrickRichard/CensorCore-Library/discussions/categories/word-and-phrase-request" target="_blank" rel="noopener noreferrer">CensorCore Discussions</a>
-.`, true);
+      log(`Report recorded. Match threshold not met.`, true);
     }
   }
 
-  function addMessage(sender, text, type, id) {
+  function addMessage(sender, content, type, id, isFile = false) {
     const wrapper = document.createElement('div');
     wrapper.className = `msg-wrapper ${type}`;
-    
     const msgDiv = document.createElement('div');
     msgDiv.className = 'msg';
     msgDiv.id = `msg-${id}`;
-    msgDiv.textContent = text;
+    
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    if (isFile) {
+        const blob = new Blob([content.data], { type: content.type });
+        const url = URL.createObjectURL(blob);
+        if (content.type.startsWith('image/')) {
+            msgDiv.innerHTML = `<img src="${url}" class="file-preview" onclick="window.open('${url}')">`;
+        } else {
+            msgDiv.innerHTML = `<a href="${url}" download="${content.name}" class="file-link">📁 ${content.name}</a>`;
+        }
+    } else {
+        msgDiv.textContent = content;
+    }
+
+    msgDiv.innerHTML += ` <span class="msg-time">${time}<span class="read-receipt" id="receipt-${id}"> ✓</span></span>`;
     wrapper.appendChild(msgDiv);
 
-    if (type === 'peer') {
+    if (type === 'peer' && !isFile) {
       const btn = document.createElement('button');
       btn.className = 'report-btn';
       btn.innerHTML = '⚑';
-      btn.onclick = () => handleReport(id, text, msgDiv, btn);
+      btn.onclick = () => handleReport(id, content, msgDiv, btn);
       wrapper.appendChild(btn);
     }
 
@@ -392,25 +494,47 @@
       msgInput.disabled = false; sendBtn.disabled = false;
       endChatBtn.disabled = false;
       log("Connection established!");
+      auditLog(`Handshake initiated with Peer: ${conn.peer}`);
+      conn.send({ type: 'handshake', name: nameInput.value, ip: myIp });
     });
     conn.on('data', (data) => {
       if (data?.type === 'handshake' || data?.type === 'name-update') {
         chatTitle.textContent = data.name;
+        if(data.ip) peerIp = data.ip;
+        auditLog(`Peer Update | Name: ${data.name} | PeerIP: ${peerIp}`, data.name);
+      } else if (data?.type === 'audit-sync') {
+        auditLog(data.action, chatTitle.textContent);
       } else if (data?.type === 'flag') {
+        auditLog(`MODERATION: Remote party flagged message ID ${data.msgId}`, chatTitle.textContent);
         blockMessageUI(data.msgId, true);
       } else if (data?.type === 'ban-alert') {
-        log(`Security Alert: The other party has been suspended from messaging for ${data.duration} minute(s) due to multiple content violations.`, true);
+        log(`Security Alert: The other party has been suspended...`, true);
       } else if (data?.type === 'chat') {
         addMessage(chatTitle.textContent, data.text, 'peer', data.id);
+        auditLog(`RECEIVED MESSAGE: "${data.text}"`, chatTitle.textContent);
+        conn.send({ type: 'read-receipt', msgId: data.id });
+      } else if (data?.type === 'file') {
+        addMessage(chatTitle.textContent, { data: data.file, name: data.name, type: data.fileType }, 'peer', data.id, true);
+        auditLog(`Received File: ${data.name}`, chatTitle.textContent);
+        conn.send({ type: 'read-receipt', msgId: data.id });
+      } else if (data?.type === 'read-receipt') {
+        const receipt = document.getElementById(`receipt-${data.msgId}`);
+        if(receipt) receipt.style.display = 'inline';
+      } else if (data?.type === 'presence') {
+        const action = data.state === 'away' ? "left the tab" : "returned to the tab";
+        log(`${chatTitle.textContent} has ${action}.`);
+        auditLog(`PRESENCE: User ${action}`, chatTitle.textContent);
+      } else if (data?.type === 'typing') {
+        typingEl.innerText = data.isTyping ? `${chatTitle.textContent} is typing...` : "";
       }
     });
     conn.on('close', () => {
-      const wasUserClosed = conn.userClosed; // CHECK FLAG
+      const wasUserClosed = conn.userClosed; 
       statusText.textContent = "Offline";
       statusPill.classList.remove('online');
       msgInput.disabled = true; sendBtn.disabled = true;
       endChatBtn.disabled = true;
-      
+      auditLog(`Connection closed with ${conn.peer}`);
       if (!wasUserClosed) {
         log("The other user has ended the chat session or disconnected.", true);
       }
@@ -420,69 +544,141 @@
 
   function sendMessage() {
     if (checkBanStatus()) return;
+    
+    // Anti-Spam (Max 5 msgs / 3s)
+    const now = Date.now();
+    messageHistory = messageHistory.filter(t => now - t < 3000);
+    if (messageHistory.length >= 5) {
+      triggerViolation("Spam flood detected");
+      return;
+    }
+
     const text = msgInput.value.trim();
     if (!text || !conn) return;
 
-    if (typeof censor !== 'undefined' && censor.isBlocked(text)) {
-      triggerViolation();
+    if (typeof censor !== 'undefined' && (censor.isBlocked(text) || checkFuzzy(text))) {
+      auditLog(`FILTER TRIGGERED: Blocked attempt to send "${text}"`);
+      triggerViolation("Banned content filter");
       msgInput.value = '';
       return;
     }
 
+    messageHistory.push(now);
     const msgId = Date.now() + Math.random().toString(36).substr(2, 5);
+    auditLog(`SENT MESSAGE: "${text}"`);
     conn.send({ type: 'chat', text: text, id: msgId });
     addMessage('Me', text, 'me', msgId);
     msgInput.value = '';
+    sendTyping(false);
   }
 
-  peer.on('open', () => { statusText.textContent = "Ready"; log("Waiting for a connection..."); });
+  // File Sharing
+  attachBtn.onclick = () => fileInput.click();
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file || !conn) return;
+    if (file.size > 2 * 1024 * 1024) { log("Limit: 2MB per file.", true); return; }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const msgId = Date.now() + Math.random().toString(36).substr(2, 5);
+        conn.send({ type: 'file', file: reader.result, name: file.name, fileType: file.type, id: msgId });
+        addMessage('Me', { data: reader.result, name: file.name, type: file.type }, 'me', msgId, true);
+        auditLog(`Sent File: ${file.name}`);
+    };
+    reader.readAsArrayBuffer(file);
+    fileInput.value = "";
+  };
+
+  // Tab Visibility Detection
+  document.addEventListener('visibilitychange', () => {
+    if (conn && conn.open) {
+      const state = document.hidden ? 'away' : 'back';
+      conn.send({ type: 'presence', state: state });
+      auditLog(`Visibility status changed: ${state}`);
+    }
+  });
+
+  let typingTimer;
+  msgInput.addEventListener('input', () => {
+    if (conn && conn.open) conn.send({ type: 'typing', isTyping: true });
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        if (conn && conn.open) conn.send({ type: 'typing', isTyping: false });
+    }, 2000);
+  });
+
+  peer.on('open', () => { 
+    statusText.textContent = "Ready"; 
+    log("Waiting for a connection..."); 
+    auditLog(`Session Ready. LocalID: ${myUniqueId}`); 
+  });
   peer.on('connection', (c) => { 
     if(conn) return;
+    auditLog(`Incoming Connection Request from ${c.peer}`);
     setupConnection(c); 
-    c.on('open', () => c.send({ type: 'handshake', name: nameInput.value }));
+    c.on('open', () => c.send({ type: 'handshake', name: nameInput.value, ip: myIp }));
   });
 
   document.getElementById('connect-btn').addEventListener('click', () => {
     const target = document.getElementById('peer-id-input').value.trim().toUpperCase();
     if (target && target !== myUniqueId) {
+        auditLog(`Attempting outbound connection to ${target}`);
         const c = peer.connect(target, { reliable: true });
         setupConnection(c);
-        c.on('open', () => c.send({ type: 'handshake', name: nameInput.value }));
+        c.on('open', () => c.send({ type: 'handshake', name: nameInput.value, ip: myIp }));
         sidebar.classList.remove('open');
     }
   });
 
-  // END CHAT LOGIC
+  document.getElementById('download-btn').addEventListener('click', () => {
+    const text = Array.from(messagesEl.children).map(m => m.textContent).join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `audit-log-${Date.now()}.txt`;
+    a.click();
+    auditLog("Downloaded full chat transcript");
+  });
+
+  // History Shortcut
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'q') {
+      const overlay = document.getElementById('history-overlay');
+      const isOpening = overlay.style.display !== 'flex';
+      overlay.style.display = isOpening ? 'flex' : 'none';
+      auditLog(isOpening ? "Opened History Log" : "Closed History Log");
+    }
+  });
+
   endChatBtn.addEventListener('click', () => {
     if (conn) {
-      conn.userClosed = true; // SET FLAG
+      auditLog("Manually terminated the session");
+      conn.userClosed = true; 
       log("You have ended the chat session.", true);
       conn.close();
       if (window.innerWidth <= 768) sidebar.classList.remove('open');
     }
   });
 
-  // SIDEBAR CONTROLS
   document.getElementById('menu-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     sidebar.classList.add('open');
+    auditLog("Opened Sidebar Menu");
   });
 
   document.getElementById('close-sidebar').addEventListener('click', () => {
     sidebar.classList.remove('open');
-  });
-
-  document.getElementById('chat-main').addEventListener('click', () => {
-    if (window.innerWidth <= 768) sidebar.classList.remove('open');
+    auditLog("Closed Sidebar Menu");
   });
 
   document.getElementById('copy-btn').addEventListener('click', () => {
     navigator.clipboard.writeText(myUniqueId);
+    auditLog("Copied connection ID to clipboard");
     log("Code copied!");
-    if (window.innerWidth <= 768) sidebar.classList.remove('open');
   });
 
-  // Admin Override
+  // Admin Override logic
   const activeKeys = new Set();
   window.addEventListener('keydown', (e) => {
     activeKeys.add(e.code);
@@ -495,12 +691,13 @@
 
   document.getElementById('submit-override').onclick = () => {
     if (document.getElementById('override-pass').value === 'devSaysLiftBan') {
-      flagCount = 0; 
-      banUntil = null;
+      auditLog("ADMIN OVERRIDE: All messaging privileges restored via developer key.");
+      flagCount = 0; banUntil = null;
       log("Administrative Override: All restrictions lifted. Records cleared.", false);
       document.getElementById('override-modal').style.display = 'none';
       document.getElementById('override-pass').value = '';
     } else {
+      auditLog("OVERRIDE FAILED: Incorrect developer key entered.");
       document.getElementById('override-modal').style.display = 'none';
       log("Authorization Failed: Invalid key.", true);
     }
